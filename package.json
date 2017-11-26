@@ -21,6 +21,7 @@
   },
   "homepage": "https://gitlab.com/arkandos/inquirer-autocomplete#README",
   "dependencies": {
+    "ansi-escapes": "^3.0.0",
     "chalk": "^2.3.0",
     "figures": "^2.0.0",
     "inquirer": "^4.0.0",

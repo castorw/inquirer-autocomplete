@@ -1,3 +1,4 @@
+const ansiEscapes = require('ansi-escapes');
 const chalk = require('chalk');
 const figures = require('figures');
 const runAsync = require('run-async');
@@ -65,7 +66,17 @@ class Autocomplete extends Base {
 
         return thisPromise.then(function _afterSearch(choices) {
             if (thisPromise === this.lastPromise) {
-                this.currentChoices = new Choices(choices.filter(c => c.type !== 'separator'));
+                choices = new Choices(choices.filter(c => c.type !== 'separator'));
+
+                if (this.firstRender) {
+                    if (typeof this.default === 'number' && this.default >= 0 && this.default < choices.realLength) {
+                        this.selected = this.default;
+                    } else if (this.default != null) {
+                        this.selected = Math.max(0, choices.pluck('value').indexOf(this.default));
+                    }
+                }
+
+                this.currentChoices = choices;
                 this.searching = false;
                 this.render();
             }
@@ -77,13 +88,17 @@ class Autocomplete extends Base {
         let bottomContent = '';
 
         if (this.firstRender) {
-            content += chalk.dim('(Use arrow keys or type to search)');
+            if (this.opt.suggestOnly) {
+                content += chalk.dim('(Tab to autocomplete) ');
+            } else {
+                content += chalk.dim('(Use arrow keys or type to search) ');
+            }
 
             if (this.opt.defaultQuery) {
                 // this makes it write the correct thing to the stream, but doesn't display it.
                 setImmediate(() =>  this.rl.write(this.opt.defaultQuery));
                 // we'll just append it to the content on the first render to make it appear.
-                content += ' ' + this.opt.defaultQuery;                
+                content += ' ' + this.opt.defaultQuery;
             }            
         }
 
@@ -131,7 +146,13 @@ class Autocomplete extends Base {
     onKeypress(evt) {
         const key = (evt.key && evt.key.name) || undefined;
 
-        if (key === 'down') {
+        if (key === 'tab' && this.opt.suggestOnly) {
+            this.rl.write(ansiEscapes.cursorLeft);
+            const autoCompleted = this.currentChoices.getChoice(this.selected).value;
+            this.rl.write(ansiEscapes.cursorForward(autoCompleted.length));
+            this.rl.line = autoCompleted;            
+            this.render();
+        } else if (key === 'down') {
             this.selected = (this.selected < this.currentChoices.length - 1 ? this.selected + 1 : 0);
             this.render();
             utils.up(this.rl, 2);
@@ -146,15 +167,38 @@ class Autocomplete extends Base {
         }
     }
 
-    onSubmit(evt) {
-        const choice = this.currentChoices.getChoice(this.selected);
-        this.answer = choice.value;
-        this.answerName = choice.name;
-        this.shortAnswer = choice.short;
+    onSubmit(line) {
+        line = line || this.rl.line;
+        
+        if (typeof this.opt.validate === 'function' && this.opt.suggestOnly) {
+            const validationResult = this.opt.validate(line);
+            if (validationResult !== true) {
+                return this.render(validationResult || 'Enter something, tab to autocomplete');
+            }
+        }
+
+        let choice = {};
+        if (this.opt.suggestOnly) {
+            choice.value = line;
+            this.answer = line;
+            this.answerName = line;
+            this.shortAnswer = line;
+            this.rl.line = '';
+        } else {
+            choice = this.currentChoices.getChoice(this.selected);
+            this.answer = choice.value;
+            this.answerName = choice.name;
+            this.shortAnswer = choice.short;
+        }
 
         runAsync(this.opt.filter, (err, value) => {
             choice.value = value;
             this.answer = value;
+
+            if (this.opt.suggestOnly) {
+                this.shortAnswer = value;
+            }
+
             this.status = 'answered';
             this.render();
             this.screen.done();
