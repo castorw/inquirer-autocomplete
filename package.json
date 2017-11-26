@@ -1,0 +1,30 @@
+{
+  "name": "@arkandos/inquirer-autocomplete",
+  "version": "1.0.0",
+  "description": "A fork of inquirer-autocomplete-prompt supporting default queries and debouncing",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/arkandos/inquirer-autocomplete.git"
+  },
+  "keywords": [
+    "inquirer",
+    "autocomplete"
+  ],
+  "author": "Joshua Reusch",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/arkandos/inquirer-autocomplete/issues"
+  },
+  "homepage": "https://gitlab.com/arkandos/inquirer-autocomplete#README",
+  "dependencies": {
+    "chalk": "^2.3.0",
+    "figures": "^2.0.0",
+    "inquirer": "^4.0.0",
+    "lodash.debounce": "^4.0.8",
+    "run-async": "^2.3.0"
+  }
+}
