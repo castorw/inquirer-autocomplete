@@ -1,6 +1,6 @@
 {
   "name": "@arkandos/inquirer-autocomplete",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A fork of inquirer-autocomplete-prompt supporting default queries and debouncing",
   "main": "index.js",
   "scripts": {
