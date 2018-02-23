@@ -96,10 +96,10 @@ class Autocomplete extends Base {
 
             if (this.opt.defaultQuery) {
                 // this makes it write the correct thing to the stream, but doesn't display it.
-                setImmediate(() =>  this.rl.write(this.opt.defaultQuery));
+                setImmediate(() => this.rl.write(this.opt.defaultQuery));
                 // we'll just append it to the content on the first render to make it appear.
                 content += ' ' + this.opt.defaultQuery;
-            }            
+            }
         }
 
         if (this.status === 'answered') {
@@ -128,7 +128,7 @@ class Autocomplete extends Base {
         let separatorOffset = 0;
         let lines = [];
 
-        for(let i = 0; i < choices.length; ++i) {
+        for (let i = 0; i < choices.length; ++i) {
             const choice = choices.getChoice(i);
             if (choice.type === 'separator') {
                 separatorOffset += 1;
@@ -150,7 +150,7 @@ class Autocomplete extends Base {
             this.rl.write(ansiEscapes.cursorLeft);
             const autoCompleted = this.currentChoices.getChoice(this.selected).value;
             this.rl.write(ansiEscapes.cursorForward(autoCompleted.length));
-            this.rl.line = autoCompleted;            
+            this.rl.line = autoCompleted;
             this.render();
         } else if (key === 'down') {
             this.selected = (this.selected < this.currentChoices.length - 1 ? this.selected + 1 : 0);
@@ -169,7 +169,7 @@ class Autocomplete extends Base {
 
     onSubmit(line) {
         line = line || this.rl.line;
-        
+
         if (typeof this.opt.validate === 'function' && this.opt.suggestOnly) {
             const validationResult = this.opt.validate(line);
             if (validationResult !== true) {
@@ -177,33 +177,40 @@ class Autocomplete extends Base {
             }
         }
 
-        let choice = {};
+        let choice = null;
         if (this.opt.suggestOnly) {
+            choice = {};
             choice.value = line;
             this.answer = line;
             this.answerName = line;
             this.shortAnswer = line;
             this.rl.line = '';
-        } else {
+        } else if (this.currentChoices.getChoice) {
             choice = this.currentChoices.getChoice(this.selected);
-            this.answer = choice.value;
-            this.answerName = choice.name;
-            this.shortAnswer = choice.short;
+            if (choice) {
+                this.answer = choice.value;
+                this.answerName = choice.name;
+                this.shortAnswer = choice.short;
+            }
         }
 
-        runAsync(this.opt.filter, (err, value) => {
-            choice.value = value;
-            this.answer = value;
+        if (choice) {
+            runAsync(this.opt.filter, (err, value) => {
+                choice.value = value;
+                this.answer = value;
 
-            if (this.opt.suggestOnly) {
-                this.shortAnswer = value;
-            }
+                if (this.opt.suggestOnly) {
+                    this.shortAnswer = value;
+                }
 
-            this.status = 'answered';
-            this.render();
-            this.screen.done();
-            this.done(choice.value);
-        })(choice.value);
+                this.status = 'answered';
+                this.render();
+                this.screen.done();
+                this.done(choice.value);
+            })(choice.value);
+        } else {
+            this.rl.write(line);
+        }
     }
 }
 
